@@ -21,16 +21,18 @@ mongoClient.connect().then(() => {
 	db = mongoClient.db("batepapoUOL");
 });
 
-app.get("/participants", (req, res) => {
+app.get("/participants", async (req, res) => {
 
-    db.collection("participants")
+
+    try {
+    const participants = await db.collection("participants")
     .find()
     .toArray()
-    .then(response => {
-       res.status(200).send(response)
-    }).catch(err => res.status(500).send(err))
-
-
+    
+    res.status(200).send(participants);
+    } catch (err) {
+        res.status(500).send(err);
+    }
 })
 
 
