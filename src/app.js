@@ -92,30 +92,31 @@ app.post("/messages", async (req, res) => {
 
         db.collection("messages").insertOne(
             {
+                from: user,
                 to,
                 text,
                 type,
                 time: dayjs().format("HH-mm-ss")
+                
             }
         )
         res.sendStatus(201)
     } catch (err) {
         res.status(500).send(err);
     }
-    
-
-    // db.collection("messages").insertOne(
-    //     {
-    //         to,
-    //         text,
-    //         type
-    //     }
-    // ).then(() =>  res.status(201).send("Mensagem enviada"))
-    // .catch((err) => res.status(500).send(err))
-
 })
 
+app.get("/messages", async (req, res) => {
+    const {user} = req.headers;
 
+    try {
+       const messages = await db.collection("messages").find().toArray();
+        res.status(200).send(messages);
+    } catch {
+        res.status(500).send("Algo deu errado com a requisição")
+    }
+
+})
 
 app.listen(5000, () => {
   console.log("Rodando em http://localhost:5000");
