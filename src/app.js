@@ -2,7 +2,7 @@ import express, { json } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import {MongoClient} from 'mongodb';
-
+import dayjs from "dayjs"
 
 dotenv.config();
 
@@ -10,8 +10,9 @@ const app = express();
 app.use(cors());
 app.use(json());
 
+
 let userAlreadyExists;
-let messageTo;
+let messageFrom;
 
 const mongoClient = new MongoClient("mongodb://localhost:27017");
 let db;
@@ -67,46 +68,52 @@ app.post("/participants", async (req, res) => {
 })
 
 
-// app.post("/messages", (req, res) => {
-//     const {to, text, type} = req.body;
-//     const {user} = req.headers;
+app.post("/messages", async (req, res) => {
+    const {to, text, type} = req.body;
+    const {user} = req.headers;
 
+    if (!to || !text) {
+        res.status(422).send("Não deixe campos vazios");
+        return;
+    }
 
-//     if (!to || !text) {
-//         res.status(422).send("Não deixe campos vazios");
-//         return;
-//     }
+    if (type !== "message" && type !== "private_message"){
+        res.status(422).send("Tipo da mensagem incorreto");
+        return;
+    }
 
-   
+    try {
+        messageFrom = await db.collection("participants").findOne({name: user});
 
-//     if (type !== "message" && type !== "private_message"){
-//         res.status(422).send("Tipo da mensagem incorreto");
-//         return;
-//     }
+        if (!messageFrom) {
+            res.status(400).send("Remetente inválido");
+            return;
+        }
 
-//     db.collection("participants").findOne()
-//     .then(response => {
-//         messageTo = response.name;
-//         console.log(messageTo)
-//     })
+        db.collection("messages").insertOne(
+            {
+                to,
+                text,
+                type,
+                time: dayjs().format("HH-mm-ss")
+            }
+        )
+        res.sendStatus(201)
+    } catch (err) {
+        res.status(500).send(err);
+    }
+    
 
-//     if(!messageTo) {
-//         res.status(404);
-//         return
-//     }
+    // db.collection("messages").insertOne(
+    //     {
+    //         to,
+    //         text,
+    //         type
+    //     }
+    // ).then(() =>  res.status(201).send("Mensagem enviada"))
+    // .catch((err) => res.status(500).send(err))
 
-//     res.status(201)
-
-//     // db.collection("messages").insertOne(
-//     //     {
-//     //         to,
-//     //         text,
-//     //         type
-//     //     }
-//     // ).then(() =>  res.status(201).send("Mensagem enviada"))
-//     // .catch((err) => res.status(500).send(err))
-
-// })
+})
 
 
 
