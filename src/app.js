@@ -36,7 +36,6 @@ app.get("/participants", async (req, res) => {
     }
 })
 
-
 app.post("/participants", async (req, res) => {
     const {name} = req.body;
 
@@ -64,7 +63,7 @@ app.post("/participants", async (req, res) => {
         db.collection("messages").insertOne({
                 from: "xxx",
                 to: "Todos",
-                text: "Entra na sala",
+                text: "entra na sala...",
                 type: "status",
                 time: dayjs().format("HH-mm-ss")
         })
@@ -75,7 +74,6 @@ app.post("/participants", async (req, res) => {
     }
 })
 
-
 app.post("/messages", async (req, res) => {
     const {to, text, type} = req.body;
     const {user} = req.headers;
@@ -85,13 +83,13 @@ app.post("/messages", async (req, res) => {
         return;
     }
 
-    if (!user) {
-        res.status(422).send("headers: user não consta");
+    if (type !== "message" && type !== "private_message"){
+        res.status(422).send("Tipo da mensagem incorreto");
         return;
     }
 
-    if (type !== "message" && type !== "private_message"){
-        res.status(422).send("Tipo da mensagem incorreto");
+    if (!user) {
+        res.status(422).send("headers: user não consta");
         return;
     }
 
@@ -99,7 +97,7 @@ app.post("/messages", async (req, res) => {
         messageFrom = await db.collection("participants").findOne({name: user});
 
         if (!messageFrom) {
-            res.status(400).send("Remetente inválido");
+            res.status(422).send("Remetente inválido");
             return;
         }
 
@@ -124,15 +122,21 @@ app.get("/messages", async (req, res) => {
     const {limit} = req.query;
 
     try {
+
+        const allMessages = await db.collection("messages").find().toArray();
+        const allowedMessages = allMessages.filter((i) => (i.from === user || i.to === user));
+
         if (limit) {
-            const messages = await db.collection("messages").find().toArray();
-            const limitMessages = messages.slice(messages.length - limit)
+            if (limit > allowedMessages.length) {
+                res.status(200).send(allowedMessages);
+                return;
+            }
+            const limitMessages = allowedMessages.slice(allowedMessages.length - limit)
             res.status(200).send(limitMessages);
             return;
         }
         
-        const messages = await db.collection("messages").find().toArray();
-        res.status(200).send(messages);
+        res.status(200).send(allowedMessages);
     } catch {
         res.status(500).send("Algo deu errado com a requisição")
     }
