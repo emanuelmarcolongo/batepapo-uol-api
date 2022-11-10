@@ -1,7 +1,7 @@
 import express, { json } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import {MongoClient} from 'mongodb';
+import {MongoClient, ObjectId} from 'mongodb';
 import dayjs from "dayjs"
 
 dotenv.config();
@@ -121,6 +121,10 @@ app.get("/messages", async (req, res) => {
     const {user} = req.headers;
     const {limit} = req.query;
 
+    if (!user) {
+        res.sendStatus(401);
+        return;
+    }
     try {
 
         const allMessages = await db.collection("messages").find().toArray();
@@ -141,6 +145,20 @@ app.get("/messages", async (req, res) => {
         res.status(500).send("Algo deu errado com a requisição")
     }
 
+})
+
+app.delete("/messages/:id", async (req, res) => {
+    const {id} = req.params;
+    const {user} = req.headers;
+
+    
+    try {
+        await db.collection("messages").deleteOne({ _id: ObjectId(id) });
+        res.status(200).send("Deleted");
+    } catch (err){
+        res.sendStatus(500);
+    }
+        
 })
 
 app.listen(5000, () => {
