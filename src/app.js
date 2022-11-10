@@ -49,9 +49,8 @@ app.post("/participants", async (req, res) => {
         const participants = await db.collection("participants")
         .find()
         .toArray()
-        console.log(participants);
-
         userAlreadyExists = participants.find((item) => item.name === name);
+
         if (userAlreadyExists) {
             res.status(409).send("Usuário já cadastrado");
             return;
@@ -60,7 +59,16 @@ app.post("/participants", async (req, res) => {
         db.collection("participants").insertOne({
             name,
             lastStatus: Date.now()
+        });
+
+        db.collection("messages").insertOne({
+                from: "xxx",
+                to: "Todos",
+                text: "Entra na sala",
+                type: "status",
+                time: dayjs().format("HH-mm-ss")
         })
+
         res.status(201).send("Created")
     } catch (err){
         res.send(err);
@@ -74,6 +82,11 @@ app.post("/messages", async (req, res) => {
 
     if (!to || !text) {
         res.status(422).send("Não deixe campos vazios");
+        return;
+    }
+
+    if (!user) {
+        res.status(422).send("headers: user não consta");
         return;
     }
 
@@ -109,8 +122,6 @@ app.post("/messages", async (req, res) => {
 app.get("/messages", async (req, res) => {
     const {user} = req.headers;
     const {limit} = req.query;
-
-   console.log(limit)
 
     try {
         if (limit) {
