@@ -124,7 +124,7 @@ app.get("/messages", async (req, res) => {
     try {
 
         const allMessages = await db.collection("messages").find().toArray();
-        const allowedMessages = allMessages.filter((i) => (i.from === user || i.to === user));
+        const allowedMessages = allMessages.filter((i) => (i.from === user || i.to === user) || i.to === "Todos");
 
         if (limit) {
             if (limit > allowedMessages.length) {
