@@ -3,9 +3,22 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import {MongoClient, ObjectId} from 'mongodb';
 import dayjs from "dayjs"
+import joi from "joi"
+
+
+const participantSchema = joi.object({
+    name: joi.string().required().min(1)
+});
+
+const messageSchema = joi.object(
+    {
+    from: joi.string(),
+    to: joi.string().min(1),
+    text: joi.string().min(1),
+    type: joi.required(),
+})
 
 dotenv.config();
-
 const app = express();
 app.use(cors());
 app.use(json());
@@ -39,8 +52,11 @@ app.get("/participants", async (req, res) => {
 app.post("/participants", async (req, res) => {
     const {name} = req.body;
 
-    if (!name) {
-        res.status(422).send("Coloque um nome");
+    const validation = participantSchema.validate(req.body, { abortEarly: false });
+
+    if (validation.error) {
+        const errors = validation.error.details.map((i) => i.message)
+        res.status(422).send(errors);
         return;
     }
 
@@ -61,7 +77,7 @@ app.post("/participants", async (req, res) => {
         });
 
         db.collection("messages").insertOne({
-                from: "xxx",
+                from: name,
                 to: "Todos",
                 text: "entra na sala...",
                 type: "status",
@@ -78,8 +94,10 @@ app.post("/messages", async (req, res) => {
     const {to, text, type} = req.body;
     const {user} = req.headers;
 
-    if (!to || !text) {
-        res.status(422).send("Não deixe campos vazios");
+    const validation = messageSchema.validate(req.body, {abortEarly: false})
+    if (validation.error) {
+        const errors = validation.error.details.map((i) => i.message)
+        res.status(422).send(errors);
         return;
     }
 
