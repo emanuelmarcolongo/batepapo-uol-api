@@ -108,9 +108,19 @@ app.post("/messages", async (req, res) => {
 
 app.get("/messages", async (req, res) => {
     const {user} = req.headers;
+    const {limit} = req.query;
+
+   console.log(limit)
 
     try {
-       const messages = await db.collection("messages").find().toArray();
+        if (limit) {
+            const messages = await db.collection("messages").find().toArray();
+            const limitMessages = messages.slice(messages.length - limit)
+            res.status(200).send(limitMessages);
+            return;
+        }
+        
+        const messages = await db.collection("messages").find().toArray();
         res.status(200).send(messages);
     } catch {
         res.status(500).send("Algo deu errado com a requisição")
