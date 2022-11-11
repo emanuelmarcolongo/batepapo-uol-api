@@ -35,6 +35,41 @@ mongoClient.connect().then(() => {
 	db = mongoClient.db("batepapoUOL");
 });
 
+setInterval(async () => {
+    try {
+        const participants = await db.collection("participants")
+        .find()
+        .toArray();
+
+        const time = Date.now();
+
+        const inactiveParticipants = participants.filter((i) => time - i.lastStatus >= 10000);
+
+        inactiveParticipants.forEach (async (i) => {
+            try {
+                await db.collection("participants").deleteOne({_id: i._id})
+                
+                db.collection("messages").insertOne({
+                    from: i.name,
+                    to: "Todos",
+                    text: "sai da sala...",
+                    type: "status",
+                    time: dayjs().format("HH-mm-ss")
+            })
+            } catch {
+
+            }
+            
+        })
+
+        } catch (err) {
+            console.log("Bad request");
+            return;
+        }
+
+
+}, 15000)
+
 app.get("/participants", async (req, res) => {
 
 
@@ -188,6 +223,36 @@ app.delete("/messages/:id", async (req, res) => {
         res.status(500).send(err);
     }
         
+})
+
+app.post("/status", async (req, res) => {
+    const {user} = req.headers;
+
+
+    try {
+        const participants = await db.collection("participants")
+        .find()
+        .toArray();
+
+        const userExists = participants.find((i) => i.name === user);
+
+        if(!userExists) {
+            res.sendStatus(404);
+            return;
+        }
+
+        const body = {
+            name: user,
+            lastStatus: Date.now()
+        }
+
+        await db.collection("participants").updateOne( { name: user } , { $set: body })
+     
+        res.sendStatus(200);
+
+    } catch (err) {
+        res.sendStatus(500)
+    }
 })
 
 app.listen(5000, () => {
